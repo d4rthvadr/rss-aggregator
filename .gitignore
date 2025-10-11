@@ -1,0 +1,63 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Binary output
+rss-aggregator
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.txt
+coverage.html
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Air (hot reload) temporary files
+tmp/
+.air.toml
+
+# Debug files
+__debug_bin
+debug
+
+# Database files (if using SQLite locally)
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log
+
+# Build directories
+bin/
+build/
+dist/
+
+# Generated files from sqlc
+internal/database/*.sql.go
+
+# OS specific
+Thumbs.db
+.DS_Store
