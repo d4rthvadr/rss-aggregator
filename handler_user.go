@@ -1,14 +1,9 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"log"
 	"net/http"
 
-	"github.com/darthvadr/rss-aggregator/internal/auth"
 	"github.com/darthvadr/rss-aggregator/internal/database"
 	"github.com/google/uuid"
 )
@@ -37,24 +32,10 @@ func (apiConfig *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Req
 	responseWithJSON(w, http.StatusOK, databaseToUser(createdUser))
 }
 
-func (apiConfig *apiConfig) handlerGetUserByApiKey(w http.ResponseWriter, r *http.Request) {
-
-	apiKey, err := auth.GetApiKey(r.Header)
+func (apiConfig *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromContext(r)
 	if err != nil {
-		responseWithError(w, http.StatusUnauthorized, fmt.Sprintf("invalid API key: %v", err))
-		return
-	}
-
-	user, err := apiConfig.DB.GetUserByApiKey(r.Context(), apiKey)
-	if err != nil {
-
-		log.Printf("error fetching user: %v", err)
-		if errors.Is(err, sql.ErrNoRows) {
-			log.Println("User not found for API key:", apiKey)
-			responseWithError(w, http.StatusNotFound, "user not found")
-			return
-		}
-		responseWithError(w, http.StatusInternalServerError, "internal server error")
+		responseWithError(w, http.StatusUnauthorized, "could not find user")
 		return
 	}
 
