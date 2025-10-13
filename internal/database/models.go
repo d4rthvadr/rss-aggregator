@@ -15,4 +15,5 @@ type User struct {
 	Name      string
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
+	ApiKey    string
 }
