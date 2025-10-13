@@ -54,10 +54,12 @@ func (apiConfig *apiConfig) middlewareAuth(next http.Handler) http.Handler {
 // and returns an error if the user is not found.
 // This function is useful for handlers that need to access the authenticated user's information.
 // It is request scoped and should be called within the context of an HTTP request.
-func getUserFromContext(r *http.Request) (database.User, error) {
+func getUserFromContext(r *http.Request) (User, error) {
 	user, ok := r.Context().Value(userContextKey).(database.User)
 	if !ok {
-		return database.User{}, errors.New("user not found in context")
+		return User{}, errors.New("user not found in context")
 	}
-	return user, nil
+
+	mappedUser := databaseToUser(user)
+	return mappedUser, nil
 }
