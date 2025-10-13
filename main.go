@@ -1,16 +1,23 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/darthvadr/rss-aggregator/internal/database"
 	chi "github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
+
+type apiConfig struct {
+	DB *database.Queries
+}
 func main() {
 	log.Println("Starting RSS Aggregator...")
 
@@ -19,7 +26,27 @@ func main() {
 		log.Fatalln("No .env file detected")
 	}
 
-	portString := os.Getenv("PORT")
+	portString := os.Getenv("APP_PORT")
+	if portString == "" {
+		log.Fatalln("No APP_PORT environment variable detected")
+	}
+
+	dbUrlString := os.Getenv("DB_URL")
+	if dbUrlString == "" {
+		log.Fatalln("No DB_URL environment variable detected")
+	}
+
+	db, err := sql.Open("postgres", dbUrlString)
+	if err != nil {
+		log.Fatalln("Error connecting to database: " + err.Error())
+	}
+	defer db.Close()
+
+
+	apiConfig := apiConfig{
+		DB: database.New(db),
+	}
+
 	log.Println("Listening on port " + portString)
 
 	router := chi.NewRouter()
@@ -42,6 +69,7 @@ func main() {
 	})
 	v1Router.Get("/health", handlerReadiness)
 	v1Router.Get("/error", handlerError)
+	v1Router.Post("/users", apiConfig.handlerCreateUser)
 
 	router.Mount("/v1", v1Router)
 
