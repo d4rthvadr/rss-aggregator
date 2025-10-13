@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/darthvadr/rss-aggregator/internal/database"
@@ -15,6 +17,7 @@ func (apiConfig *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Req
 	}
 	var params parameters
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		log.Println("Error decoding request body: ", fmt.Errorf("error decoding request body: %w", err))
 		responseWithError(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
@@ -25,7 +28,8 @@ func (apiConfig *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Req
 	})
 
 	if err != nil {
-		responseWithError(w, http.StatusInternalServerError, "error creating user: "+err.Error())
+		log.Println("Error creating user: ", fmt.Errorf("error creating user: %w", err))
+		responseWithError(w, http.StatusInternalServerError, "error creating user")
 		return
 	}
 
