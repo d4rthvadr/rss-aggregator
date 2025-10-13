@@ -238,26 +238,26 @@ make migrate-create NAME=add_feeds_table
 If you prefer to use goose commands directly:
 
 ```bash
-# Set database connection string (already in .env as DB_CON_STRING)
-export DB_CON_STRING="postgresql://postgres:password@localhost:5432/rss_aggregator?sslmode=disable"
+# Set database connection string (already in .env as DB_URL)
+export DB_URL="postgresql://postgres:password@localhost:5432/rss_aggregator?sslmode=disable"
 
 # Apply all pending migrations
-goose -dir sql/schema postgres "$DB_CON_STRING" up
+goose -dir sql/schema postgres "$DB_URL" up
 
 # Check migration status
-goose -dir sql/schema postgres "$DB_CON_STRING" status
+goose -dir sql/schema postgres "$DB_URL" status
 
 # Rollback last migration
-goose -dir sql/schema postgres "$DB_CON_STRING" down
+goose -dir sql/schema postgres "$DB_URL" down
 
 # Reset all migrations
-goose -dir sql/schema postgres "$DB_CON_STRING" reset
+goose -dir sql/schema postgres "$DB_URL" reset
 
 # Apply specific version
-goose -dir sql/schema postgres "$DB_CON_STRING" up-to 1
+goose -dir sql/schema postgres "$DB_URL" up-to 1
 
 # Redo last migration (down + up)
-goose -dir sql/schema postgres "$DB_CON_STRING" redo
+goose -dir sql/schema postgres "$DB_URL" redo
 ```
 
 ### Common Goose Commands
@@ -504,10 +504,10 @@ ports:
 
 ### Goose Connection Issues
 
-Make sure your `DB_CON_STRING` environment variable is set:
+Make sure your `DB_URL` environment variable is set:
 
 ```bash
-export DB_CON_STRING="postgresql://postgres:password@localhost:5432/rss_aggregator?sslmode=disable"
+export DB_URL="postgresql://postgres:password@localhost:5432/rss_aggregator?sslmode=disable"
 ```
 
 Or source it from `.env`:
