@@ -70,6 +70,7 @@ func main() {
 	v1Router.Get("/health", handlerReadiness)
 	v1Router.Get("/error", handlerError)
 	v1Router.Post("/users", apiConfig.handlerCreateUser)
+	v1Router.Get("/users", apiConfig.handlerGetUserByApiKey)
 
 	router.Mount("/v1", v1Router)
 
