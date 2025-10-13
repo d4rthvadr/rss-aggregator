@@ -15,6 +15,7 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+
 func databaseToUser(dbUser database.User) User {
 	return User{
 		ID:        dbUser.ID,
@@ -24,3 +25,35 @@ func databaseToUser(dbUser database.User) User {
 		ApiKey: dbUser.ApiKey,
 	}
 }
+
+type Feed struct {
+	ID        uuid.UUID `json:"id"`
+	Title     string    `json:"title"`
+	URL       string    `json:"url"`
+	UserID    uuid.NullUUID `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+
+func databaseToFeed(dbFeed database.Feed) Feed {
+	return Feed{
+		ID:        dbFeed.ID,
+		Title:     dbFeed.Title,
+		URL:       dbFeed.Url,
+		UserID:    dbFeed.UserID,
+		CreatedAt: dbFeed.CreatedAt.Time,
+		UpdatedAt: dbFeed.UpdatedAt.Time,
+	}
+}
+
+
+
+func databaseFeedsToFeeds(dbFeeds []database.Feed) []Feed {
+	feeds := make([]Feed, len(dbFeeds))
+	for i, dbFeed := range dbFeeds {
+		feeds[i] = databaseToFeed(dbFeed)
+	}
+	return feeds
+}
+
