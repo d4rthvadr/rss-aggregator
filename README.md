@@ -154,23 +154,13 @@ docker-compose logs postgres
 
 ### 3. Configure Environment Variables
 
-Create a `.env` file in the project root:
+Create a `.env` file from the example:
 
-```env
-# Application
-APP_PORT=8080
-
-# Database Connection
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=password
-DB_NAME=rss_aggregator
-DB_SSLMODE=disable
-
-# Database URL (used by goose)
-DB_URL=postgresql://postgres:password@localhost:5432/rss_aggregator?sslmode=disable
+```bash
+cp .env.example .env
 ```
+
+Update the values in `.env` if needed (default values should work for local development).
 
 ### 4. Run Database Migrations
 
@@ -350,88 +340,23 @@ make migrate-reset
 make migrate-create NAME=add_feeds_table
 ```
 
-#### Using Goose Directly
-
-If you prefer to use goose commands directly:
+**Note**: For Makefile migration commands to work, ensure `DB_URL` is exported in your shell:
 
 ```bash
-# Set database connection string (already in .env as DB_URL)
 export DB_URL="postgresql://postgres:password@localhost:5432/rss_aggregator?sslmode=disable"
-
-# Apply all pending migrations
-goose -dir sql/schema postgres "$DB_URL" up
-
-# Check migration status
-goose -dir sql/schema postgres "$DB_URL" status
-
-# Rollback last migration
-goose -dir sql/schema postgres "$DB_URL" down
-
-# Reset all migrations
-goose -dir sql/schema postgres "$DB_URL" reset
-
-# Apply specific version
-goose -dir sql/schema postgres "$DB_URL" up-to 1
-
-# Redo last migration (down + up)
-goose -dir sql/schema postgres "$DB_URL" redo
 ```
 
-### Common Goose Commands
+Or source your `.env` file:
 
-| Command             | Description                          |
-| ------------------- | ------------------------------------ |
-| `up`                | Apply all pending migrations         |
-| `down`              | Rollback the last migration          |
-| `status`            | Show migration status                |
-| `create <name> sql` | Create a new migration file          |
-| `reset`             | Rollback all migrations              |
-| `redo`              | Rollback and re-apply last migration |
-| `version`           | Show current migration version       |
+```bash
+set -a
+source .env
+set +a
+```
 
 ## SQL Code Generation with sqlc
 
-sqlc generates type-safe Go code from SQL queries, eliminating the need for ORMs.
-
-### sqlc Configuration
-
-Create `sqlc.yaml` in the project root:
-
-```yaml
-version: "2"
-sql:
-  - engine: "postgresql"
-    queries: "sql/queries/"
-    schema: "sql/schema/"
-    gen:
-      go:
-        package: "database"
-        out: "internal/database"
-        emit_json_tags: true
-        emit_prepared_queries: false
-        emit_interface: false
-        emit_exact_table_names: false
-```
-
-### Writing SQL Queries
-
-Create query files in `sql/queries/`:
-
-```sql
--- name: CreateUser :one
-INSERT INTO users (id, name, created_at, updated_at)
-VALUES ($1, $2, $3, $4)
-RETURNING *;
-
--- name: GetUser :one
-SELECT * FROM users WHERE id = $1;
-
--- name: ListUsers :many
-SELECT * FROM users ORDER BY created_at DESC;
-
--- name: DeleteUser :exec
-DELETE FROM users WHERE id = $1;
-```
+sqlc generates type-safe Go code from SQL queries, eliminating the need for ORMs. The configuration is already set up in `sqlc.yaml`.
 
 ### Generating Go Code
 
@@ -444,34 +369,6 @@ sqlc generate
 # - Struct definitions matching your tables
 # - No runtime reflection or string building
 ```
-
-### Using Generated Code
-
-```go
-import "github.com/yourusername/rss-aggregator/internal/database"
-
-// Create a new user
-user, err := db.CreateUser(ctx, database.CreateUserParams{
-    ID:        uuid.New(),
-    Name:      "John Doe",
-    CreatedAt: time.Now(),
-    UpdatedAt: time.Now(),
-})
-
-// Get a user
-user, err := db.GetUser(ctx, userID)
-
-// List all users
-users, err := db.ListUsers(ctx)
-```
-
-### sqlc Benefits
-
-- ✅ **Type safety**: Compile-time errors for SQL mistakes
-- ✅ **No reflection**: Fast runtime performance
-- ✅ **No ORM complexity**: Write plain SQL
-- ✅ **Auto-completion**: IDE support for generated code
-- ✅ **Easy testing**: Generated code is easy to mock
 
 ## Building for Production
 
@@ -587,17 +484,10 @@ make migrate-create NAME=add_users_table     # Create migration
 # Code Generation
 sqlc generate                     # Generate Go code from SQL
 
-# Go Version Management
-goenv versions                    # List installed versions
-goenv install 1.23.2             # Install specific version
-goenv global 1.23.2              # Set global version
-goenv local 1.22.5               # Set project-specific version
 
 # Development
-air                              # Run with hot reload
 go run .                         # Run application
 go build -o rss-aggregator       # Build binary
-go test ./...                    # Run tests
 go mod tidy                      # Clean up dependencies
 ```
 
