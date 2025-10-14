@@ -45,3 +45,23 @@ func (apiConfig *apiConfig) handlerCreateFeedFollows(w http.ResponseWriter, r *h
 	responseWithJSON(w, http.StatusOK, databaseToFeedFollows(createdFeedFollows))
 }
 
+
+func (apiConfig *apiConfig) handlerGetFeedFollows(w http.ResponseWriter, r *http.Request) {
+
+	user, err := getUserFromContext(r)
+	if err != nil {
+		responseWithError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+
+	feedFollows, err := apiConfig.DB.GetFeedFollows(r.Context(), uuid.NullUUID{UUID: user.ID, Valid: true})
+	if err != nil {
+		log.Println("Error listing feed follows: ", fmt.Errorf("error listing feed follows: %w", err))
+		responseWithError(w, http.StatusInternalServerError, "error listing feed follows")
+		return
+	}
+	mappedFeedFollows := databaseFeedFollowsToFeedFollows(feedFollows)
+
+	responseWithJSON(w, http.StatusOK, mappedFeedFollows)
+}
