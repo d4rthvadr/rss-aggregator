@@ -8,6 +8,11 @@ A Go-based RSS feed aggregator built with Chi router and PostgreSQL. This applic
 - ✅ API key-based authentication
 - ✅ Create and manage RSS feeds
 - ✅ Follow/unfollow RSS feeds
+- ✅ **RSS Feed Scraping**: Background worker that automatically fetches and parses RSS feeds
+- ✅ **Post Storage**: Store individual RSS posts/articles from feeds
+- ✅ **Concurrent Processing**: Multi-threaded feed scraping with configurable concurrency
+- ✅ **Smart Feed Rotation**: Fetches feeds based on last update time for fair distribution
+- ✅ **Post Retrieval**: Get posts for users based on their followed feeds
 - ✅ Thread-safe request handling with context-based authentication
 - ✅ Type-safe database queries with sqlc
 - ✅ Database migrations with goose
@@ -15,109 +20,14 @@ A Go-based RSS feed aggregator built with Chi router and PostgreSQL. This applic
 - ✅ CORS support for web clients
 - ✅ PostgreSQL with UUID primary keys and timezone-aware timestamps
 
-## Technology Stack
-
-### Core
-
-- **Go 1.23.2**: Primary programming language
-- **PostgreSQL 15**: Database with UUID and timezone support
-- **Chi Router v5**: Lightweight HTTP router and middleware framework
-- **sqlc**: Type-safe SQL code generation (compile-time SQL validation)
-- **goose**: Database migration management
-
-### Libraries
-
-- `github.com/go-chi/chi/v5` - HTTP routing and middleware
-- `github.com/go-chi/cors` - CORS middleware
-- `github.com/google/uuid` - UUID generation
-- `github.com/lib/pq` - PostgreSQL driver
-- `github.com/joho/godotenv` - Environment variable management
-
-### Development Tools
-
-- **goenv** - Go version management
-- **Docker Compose** - Local database containerization
-
-## Prerequisites
-
-- Go 1.23+ (managed via goenv)
-- Docker and Docker Compose
-- Git
-- goose (database migrations)
-- sqlc (SQL code generation)
-
-## System Requirements & Versions
-
-| Tool           | Version | Purpose                       |
-| -------------- | ------- | ----------------------------- |
-| Go             | 1.23.2+ | Application runtime           |
-| PostgreSQL     | 15      | Database                      |
-| goenv          | 2.2.30+ | Go version management         |
-| goose          | latest  | Database migrations           |
-| sqlc           | latest  | Type-safe SQL code generation |
-| Docker         | latest  | Container runtime             |
-| Docker Compose | latest  | Multi-container orchestration |
-
-## Project Structure
-
-```
-rss-aggregator/
-├── docker-compose.yml           # PostgreSQL database setup
-├── .env                         # Environment variables
-├── Makefile                     # Goose migration shortcuts
-├── sqlc.yaml                    # sqlc configuration
-├── go.mod                       # Go module dependencies
-├── go.sum                       # Go module checksums
-├── main.go                      # Main application entry point
-├── json.go                      # JSON response utilities
-├── models.go                    # Domain models (User, Feed, FeedFollow)
-├── middleware_auth.go           # Authentication middleware
-├── handler_readiness.go         # Health check handler
-├── handler_error.go             # Error handler
-├── handler_user.go              # User CRUD handlers
-├── handler_feed.go              # Feed CRUD handlers
-├── handler_feed_follows.go      # Feed follows handlers
-├── internal/
-│   ├── auth/
-│   │   └── auth.go             # API key extraction utilities
-│   └── database/
-│       ├── db.go               # Generated database connection
-│       ├── models.go           # Generated database models
-│       ├── users.sql.go        # Generated user queries
-│       ├── feeds.sql.go        # Generated feed queries
-│       └── feed_follows.sql.go # Generated feed_follows queries
-├── sql/
-│   ├── schema/                 # Database migrations
-│   │   ├── 001_users.sql       # Create users table
-│   │   ├── 002_users.sql       # Add api_key to users
-│   │   ├── 003_feeds.sql       # Create feeds table
-│   │   └── 004_feed_follows.sql # Create feed_follows table
-│   └── queries/                # SQL queries for sqlc
-│       ├── users.sql           # User queries
-│       ├── feeds.sql           # Feed queries
-│       └── feed_follows.sql    # Feed follow queries
-└── README.md
-```
-
 ## Installation
 
-### 1. Install Go Version Manager (goenv)
+# Install Go 1.23.2 with Go Version Manager
 
-```bash
-# Install goenv via Homebrew
-arch -arm64 brew install goenv
-
-# Add to your ~/.bash_profile or ~/.zshrc
-echo 'export GOENV_ROOT="$HOME/.goenv"' >> ~/.bash_profile
-echo 'export PATH="$GOENV_ROOT/bin:$PATH"' >> ~/.bash_profile
-echo 'eval "$(goenv init -)"' >> ~/.bash_profile
-echo 'export PATH="$HOME/.goenv/shims:$PATH"' >> ~/.bash_profile
-source ~/.bash_profile
-
-# Install Go 1.23.2
 goenv install 1.23.2
 goenv global 1.23.2
-```
+
+````
 
 ### 2. Install Development Tools
 
@@ -131,7 +41,7 @@ go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 # Verify installations
 goose --version
 sqlc version
-```
+````
 
 ## Getting Started
 
@@ -212,6 +122,7 @@ Authorization: ApiKey <your-api-key>
 | GET    | `/v1/feeds`        | Get all feeds                  | -                                      | Array of feed objects       |
 | POST   | `/v1/feed_follows` | Follow an RSS feed             | `{"feed_id": "uuid"}`                  | FeedFollow object           |
 | GET    | `/v1/feed_follows` | Get user's feed follows        | -                                      | Array of FeedFollow objects |
+| GET    | `/v1/posts`        | Get posts from followed feeds  | `?limit=20` (optional)                 | Array of Post objects       |
 
 ### Request/Response Examples
 
@@ -260,61 +171,12 @@ curl -X POST http://localhost:8080/v1/feed_follows \
   -d '{"feed_id": "550e8400-e29b-41d4-a716-446655440000"}'
 ```
 
-## Development
-
-### Database Management
+#### Get Posts
 
 ```bash
-# Connect to database
-docker-compose exec postgres psql -U postgres -d rss_aggregator
-
-# Stop database
-docker-compose down
-
-# Stop and remove volumes (careful: this deletes data)
-docker-compose down -v
+curl -X GET http://localhost:8080/v1/posts?limit=10 \
+  -H "Authorization: ApiKey a1b2c3d4e5f6..."
 ```
-
-## Database Migrations with Goose
-
-Goose is used to manage database schema changes with version control.
-
-### Migration File Structure
-
-```
-sql/
-└── schema/
-    ├── 001_users.sql
-    ├── 002_feeds.sql
-    └── 003_posts.sql
-```
-
-### Creating a Migration
-
-```bash
-# Using Makefile (easier)
-make migrate-create NAME=add_users_table
-
-# Or using goose directly
-goose -dir sql/schema create add_users_table sql
-```
-
-### Migration File Format
-
-```sql
--- +goose Up
-CREATE TABLE users (
-    id UUID PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- +goose Down
-DROP TABLE users;
-```
-
-### Running Migrations
 
 #### Using Makefile (Recommended)
 
@@ -354,22 +216,6 @@ source .env
 set +a
 ```
 
-## SQL Code Generation with sqlc
-
-sqlc generates type-safe Go code from SQL queries, eliminating the need for ORMs. The configuration is already set up in `sqlc.yaml`.
-
-### Generating Go Code
-
-```bash
-# Generate type-safe Go code from SQL
-sqlc generate
-
-# This creates Go files in internal/database/ with:
-# - Type-safe functions for each query
-# - Struct definitions matching your tables
-# - No runtime reflection or string building
-```
-
 ## Building for Production
 
 ```bash
@@ -380,91 +226,12 @@ go build -ldflags="-s -w" -o rss-aggregator
 ./rss-aggregator
 ```
 
-### Production Environment Variables
-
-Ensure these are set in production:
-
-```env
-APP_PORT=8080
-DB_URL=postgresql://user:password@host:5432/dbname?sslmode=require
-```
-
-**Important**:
-
-- Use `sslmode=require` in production
-- Store `.env` securely and never commit it to version control
-- Consider using environment-specific secret management (AWS Secrets Manager, HashiCorp Vault, etc.)
-
-## Project Dependencies
-
-### Go Packages
-
-```bash
-# Install project dependencies
-go mod download
-```
-
-| Package                    | Version | Purpose                      |
-| -------------------------- | ------- | ---------------------------- |
-| `github.com/go-chi/chi/v5` | v5.x    | HTTP router and middleware   |
-| `github.com/go-chi/cors`   | latest  | CORS support                 |
-| `github.com/joho/godotenv` | latest  | Environment variable loading |
-| `github.com/lib/pq`        | latest  | PostgreSQL driver            |
-| `github.com/google/uuid`   | latest  | UUID generation              |
-
 ### Development Tools
 
 | Tool  | Installation                                              | Purpose             |
 | ----- | --------------------------------------------------------- | ------------------- |
 | goose | `go install github.com/pressly/goose/v3/cmd/goose@latest` | Database migrations |
 | sqlc  | `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`     | SQL code generation |
-
-### Installing All Dependencies
-
-```bash
-# Install Go packages
-go mod tidy
-
-# Install development tools
-go install github.com/pressly/goose/v3/cmd/goose@latest
-go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-
-# Verify installations
-goose --version
-sqlc version
-```
-
-## Quick Reference
-
-### Daily Development Workflow
-
-```bash
-# 1. Start database (if not already running)
-docker-compose up -d
-
-# 2. Run migrations (if you created new ones)
-make migrate-up
-
-# 3. Generate code from SQL (after modifying queries)
-sqlc generate
-
-# 4. Run application
-go build && ./rss-aggregator
-```
-
-### Adding New Features
-
-When adding a new feature (e.g., posts, comments):
-
-1. **Create Migration**: `make migrate-create NAME=add_posts_table`
-2. **Write SQL Schema**: Edit the new migration file in `sql/schema/`
-3. **Apply Migration**: `make migrate-up`
-4. **Write SQL Queries**: Create query file in `sql/queries/` (e.g., `posts.sql`)
-5. **Generate Code**: `sqlc generate`
-6. **Create Domain Model**: Add struct to `models.go`
-7. **Create Conversion Function**: Add `databaseToPost()` function
-8. **Create Handler**: Create `handler_post.go` with your endpoints
-9. **Register Routes**: Add routes in `main.go`
 
 ### Common Commands Cheat Sheet
 
@@ -489,6 +256,9 @@ sqlc generate                     # Generate Go code from SQL
 go run .                         # Run application
 go build -o rss-aggregator       # Build binary
 go mod tidy                      # Clean up dependencies
+
+# Run application
+go build && ./rss-aggregator
 ```
 
 ## Troubleshooting
