@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/darthvadr/rss-aggregator/internal/database"
 	chi "github.com/go-chi/chi/v5"
@@ -15,6 +16,8 @@ import (
 )
 
 
+const scrapingConcurrency = 10
+const durationInMinutes = 5 * time.Minute
 type apiConfig struct {
 	DB *database.Queries
 }
@@ -42,6 +45,9 @@ func main() {
 	}
 	defer db.Close()
 
+	// start scraper in a separate goroutine
+
+	go startScraping(database.New(db), scrapingConcurrency, durationInMinutes)
 
 	apiConfig := apiConfig{
 		DB: database.New(db),
@@ -75,6 +81,8 @@ func main() {
 	v1Router.With(apiConfig.middlewareAuth).Get("/feeds", apiConfig.handlerGetFeeds)
 	v1Router.With(apiConfig.middlewareAuth).Post("/feed_follows", apiConfig.handlerCreateFeedFollows)
 	v1Router.With(apiConfig.middlewareAuth).Get("/feed_follows", apiConfig.handlerGetFeedFollows)
+	v1Router.With(apiConfig.middlewareAuth).Delete("/feed_follows/{feedFollowId}", apiConfig.handlerDeleteFeedFollows)
+	v1Router.With(apiConfig.middlewareAuth).Get("/posts", apiConfig.handlerGetPostForUser)
 
 
 	router.Mount("/v1", v1Router)
